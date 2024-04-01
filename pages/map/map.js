@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import {withAuthenticator} from '@aws-amplify/ui-react';
 
 const locations = [
     {
@@ -36,7 +37,7 @@ const locations = [
   // Add more locations here
 ];
 
-const Map = () => {
+const Map = ({ signOut, user}) => {
   useEffect(() => {
     const initMap = () => {
       const map = new window.google.maps.Map(document.getElementById('google-map'), {
@@ -71,7 +72,13 @@ const Map = () => {
     document.head.appendChild(googleMapsScript);
   }, []);
 
-  return <div id="google-map" style={{ height: '100vh', width: '100%' }} />;
+  return (
+    <>
+    <button onClick={signOut}>Sign Out</button>
+    <div id="google-map" style={{ height: '100vh', width: '100%' }} />
+    </>
+  
+  );
 };
 
-export default Map;
+export default withAuthenticator(Map);
