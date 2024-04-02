@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
 import {withAuthenticator} from '@aws-amplify/ui-react';
+import io from 'socket.io-client';
+
+const socket = io('http://localhost:3001'); 
 
 const locations = [
     {
@@ -39,37 +42,49 @@ const locations = [
 
 const Map = ({ signOut, user}) => {
   useEffect(() => {
-    const initMap = () => {
-      const map = new window.google.maps.Map(document.getElementById('google-map'), {
-        zoom: 7.5,
-        center: { lat: 7.87708, lng: 80.69791 }, // Roughly the center of Australia
-      });
-
-      // Create markers and info windows for each location
-      locations.forEach((location) => {
-        const marker = new window.google.maps.Marker({
-          position: location.coords,
-          map: map,
-        });
-
-        const infoWindow = new window.google.maps.InfoWindow({
-          content: `<div style="color:black"><h3>${location.location} </h3><p>${location.content}</p><p>Humidity: ${location.humidity}
-          </p><p>Temperature: ${location.temperature}</p><p>Air Pressure: ${location.airpressure}</p></div>`,
-        });
-
-        marker.addListener('click', () => {
-          infoWindow.open(map, marker);
-        });
-      });
+    console.log('Use effect ran');
+    socket.on('weather data', data => {
+      console.log('Received weather data:', data);
+      // You can set this data to state and use it in your component
+    });
+    return () => {
+      console.log('Returned 2');
+      socket.off('weather data');
     };
 
-    // Load the Google Maps script
-    const googleMapsScript = document.createElement('script');
-    googleMapsScript.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyC-jY4wwj2ymaqTUy-D_ofRblmX0ihVfiI&callback=initMap`;
-    googleMapsScript.async = true;
-    googleMapsScript.defer = true;
-    window.initMap = initMap; // Make initMap globally available
-    document.head.appendChild(googleMapsScript);
+    
+
+    // const initMap = () => {
+    //   const map = new window.google.maps.Map(document.getElementById('google-map'), {
+    //     zoom: 7.5,
+    //     center: { lat: 7.87708, lng: 80.69791 }, // Roughly the center of Australia
+    //   });
+
+    //   // Create markers and info windows for each location
+    //   locations.forEach((location) => {
+    //     const marker = new window.google.maps.Marker({
+    //       position: location.coords,
+    //       map: map,
+    //     });
+
+    //     const infoWindow = new window.google.maps.InfoWindow({
+    //       content: `<div style="color:black"><h3>${location.location} </h3><p>${location.content}</p><p>Humidity: ${location.humidity}
+    //       </p><p>Temperature: ${location.temperature}</p><p>Air Pressure: ${location.airpressure}</p></div>`,
+    //     });
+
+    //     marker.addListener('click', () => {
+    //       infoWindow.open(map, marker);
+    //     });
+    //   });
+    // };
+
+    // // Load the Google Maps script
+    // const googleMapsScript = document.createElement('script');
+    // googleMapsScript.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyC-jY4wwj2ymaqTUy-D_ofRblmX0ihVfiI&callback=initMap`;
+    // googleMapsScript.async = true;
+    // googleMapsScript.defer = true;
+    // window.initMap = initMap; // Make initMap globally available
+    // document.head.appendChild(googleMapsScript);
   }, []);
 
   return (
