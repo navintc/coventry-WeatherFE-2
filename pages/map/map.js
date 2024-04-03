@@ -1,84 +1,94 @@
-import { useEffect } from 'react';
-import {withAuthenticator} from '@aws-amplify/ui-react';
+import { useState, useEffect } from 'react';
+import io from 'socket.io-client';
 
-const locations = [
-    {
-        coords: { lat: 6.9271, lng: 79.8612 }, // Colombo
-        location: "Colombo",
-        humidity: 75,
-        temperature: 28,
-        airpressure: 1010,
-        content: 'Misty',
-      },
-      {
-        coords: { lat: 7.8731, lng: 80.7718 }, // Kandy
-        location: "Kandy",
-        humidity: 80,
-        temperature: 25,
-        airpressure: 1012,
-        content: 'Cloudy',
-      },
-      {
-        coords: { lat: 6.0535, lng: 80.2210 }, // Galle
-        location: "Galle",
-        humidity: 70,
-        temperature: 29,
-        airpressure: 1011,
-        content: 'Sunny',
-      },
-      {
-        coords: { lat: 8.3114, lng: 80.4037 }, // Anuradhapura
-        location: "Anuradhapura",
-        humidity: 65,
-        temperature: 30,
-        airpressure: 1010,
-        content: 'Rainy',
-      },
-  // Add more locations here
-];
+// Initialize the socket connection
+const socket = io('http://localhost:3001');
 
-const Map = ({ signOut, user}) => {
+const Map = ({ signOut, user }) => {
+  const [locations, setLocations] = useState([]);
+  const [map, setMap] = useState(null);
+  const [markers, setMarkers] = useState([]);
+
+  // Initialize Google Map
+  const initMap = () => {
+    const googleMap = new window.google.maps.Map(document.getElementById('google-map'), {
+      zoom: 7.5,
+      center: { lat: 7.87708, lng: 80.69791 }, // Center of Sri Lanka
+    });
+    setMap(googleMap);
+  };
+
+  // Update markers based on locations
+  const updateMarkers = (locations) => {
+    // Clear existing markers
+    markers.forEach(marker => marker.setMap(null));
+
+    // Add new markers
+    const newMarkers = locations.map(location => {
+      const marker = new window.google.maps.Marker({
+        position: { lat: location.lat, lng: location.lon },
+        map,
+      });
+
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: `<div style="color:black"><h3>${location.location}</h3><p>${location.content}</p><p>Humidity: ${location.humidity}</p><p>Temperature: ${location.temperature}</p><p>Air Pressure: ${location.airpressure}</p></div>`,
+      });
+
+      marker.addListener('click', () => {
+        infoWindow.open(map, marker);
+      });
+
+      return marker;
+    });
+
+    setMarkers(newMarkers);
+  };
+
   useEffect(() => {
-    const initMap = () => {
-      const map = new window.google.maps.Map(document.getElementById('google-map'), {
-        zoom: 7.5,
-        center: { lat: 7.87708, lng: 80.69791 }, // Roughly the center of Australia
-      });
-
-      // Create markers and info windows for each location
-      locations.forEach((location) => {
-        const marker = new window.google.maps.Marker({
-          position: location.coords,
-          map: map,
-        });
-
-        const infoWindow = new window.google.maps.InfoWindow({
-          content: `<div style="color:black"><h3>${location.location} </h3><p>${location.content}</p><p>Humidity: ${location.humidity}
-          </p><p>Temperature: ${location.temperature}</p><p>Air Pressure: ${location.airpressure}</p></div>`,
-        });
-
-        marker.addListener('click', () => {
-          infoWindow.open(map, marker);
-        });
-      });
+    // Load Google Maps script
+    const loadGoogleMapsScript = () => {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GMAPS_API_KEY}&callback=initMap`;
+      script.async = true;
+      document.head.appendChild(script);
+      window.initMap = initMap;
     };
 
-    // Load the Google Maps script
-    const googleMapsScript = document.createElement('script');
-    googleMapsScript.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyC-jY4wwj2ymaqTUy-D_ofRblmX0ihVfiI&callback=initMap`;
-    googleMapsScript.async = true;
-    googleMapsScript.defer = true;
-    window.initMap = initMap; // Make initMap globally available
-    document.head.appendChild(googleMapsScript);
+    if (!window.google) {
+      loadGoogleMapsScript();
+    } else {
+      initMap();
+    }
+
+    // Setup WebSocket listener
+    socket.on('weather data', (data) => {
+      console.log('Received weather data:', data);
+      setLocations(data);
+    });
+
+    return () => {
+      socket.off('weather data');
+      window.initMap = null; // Cleanup global function reference
+    };
   }, []);
+
+  useEffect(() => {
+    if (map) {
+      updateMarkers(locations);
+    }
+  }, [locations, map]); // Ensure markers are updated when locations or map state changes
 
   return (
     <>
-    <button onClick={signOut}>Sign Out</button>
-    <div id="google-map" style={{ height: '100vh', width: '100%' }} />
+      <div className='navbar-title'>
+        <h1>Sri Lankan Realtime Weather Map</h1>
+        <div className='button'>
+          <button onClick={signOut}>Sign Out</button>
+        </div>
+      </div>
+      <div id="google-map" style={{ height: 'calc(100vh - 110px)', width: '100%' }}></div>
     </>
-  
   );
 };
 
-export default withAuthenticator(Map);
+export default Map;
