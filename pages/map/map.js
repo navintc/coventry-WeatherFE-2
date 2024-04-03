@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import {withAuthenticator} from '@aws-amplify/ui-react';
 import io from 'socket.io-client';
 
 // Initialize the socket connection
@@ -91,4 +92,4 @@ const Map = ({ signOut, user }) => {
   );
 };
 
-export default Map;
+export default withAuthenticator(Map);
