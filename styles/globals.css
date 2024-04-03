@@ -115,6 +115,20 @@ a:visited {
   }
 }
 
+.navbar-title{
+  display: flex;
+  justify-content: space-between;
+}
+
+.button{
+  flex-direction: column;
+  display: flex;
+  justify-content: center;
+}
+.button button{
+  height: 40px;
+}
+
 /*.username{*/
 /*    width: 340px;*/
 /*    height: 50px;*/
